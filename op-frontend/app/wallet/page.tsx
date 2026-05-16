@@ -19,6 +19,7 @@ import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  addTransaction,
   getOrCreateWallet,
   WalletData,
   updateOGBalance,
@@ -29,7 +30,16 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { abi, contractAddress } from "@/app/abi";
-import { useReadContract, useWriteContract } from "wagmi";
+import {
+  useAccount,
+  useReadContract,
+  useSendTransaction,
+  useSignMessage,
+  useWriteContract,
+} from "wagmi";
+import { parseEther } from "viem";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
 
 export default function WalletPage() {
   const [wallet, setWallet] = useState<WalletData | null>(null);
@@ -38,100 +48,56 @@ export default function WalletPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshingBalance, setIsRefreshingBalance] = useState(false);
   const [isSendingTokens, setIsSendingTokens] = useState(false);
+  const [isDepositing, setIsDepositing] = useState(false);
+  const [depositOpen, setDepositOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
-  const [recipientAddress, setRecipientAddress] = useState("");
   const [sendAmount, setSendAmount] = useState("");
+  const [depositAmount, setDepositAmount] = useState("");
   const { writeContractAsync: mapWallet } = useWriteContract();
+  const { sendTransactionAsync } = useSendTransaction();
+  const { signMessageAsync } = useSignMessage();
+  const { address: metaMaskAddress } = useAccount();
 
-  const { data: agentPublicKey, isLoading: isPublicKeyLoading } =
+  const { data: isAlreadyMapped, isLoading: isMappingLoading } =
     useReadContract({
       address: contractAddress,
       abi: abi,
-      functionName: "getPublicKey",
-      args: [],
-    });
-  const { data: agentPrivateKey, isLoading: isPrivateKeyLoading } =
-    useReadContract({
-      address: contractAddress,
-      abi: abi,
-      functionName: "getPrivateKey",
-      args: [],
+      functionName: "hasLinkedKeys",
+      args: [metaMaskAddress as `0x${string}`],
+      query: { enabled: !!metaMaskAddress },
     });
 
   useEffect(() => {
-    // Get or create wallet on component mount
     const fetchWallet = async () => {
-      // Check if agent keys exist on the blockchain
-      if (agentPublicKey && agentPrivateKey) {
-        // Use the keys from the blockchain
-        const walletData: WalletData = {
-          address: agentPublicKey as string,
-          privateKey: agentPrivateKey as string,
+      const existingWallet = localStorage.getItem("agent-wallet");
+      let walletData: WalletData;
+
+      if (existingWallet) {
+        const parsed = JSON.parse(existingWallet);
+        walletData = {
+          address: parsed.address,
+          privateKey: parsed.privateKey,
           balance: 0,
           ogBalance: 0,
           transactions: [],
         };
-
-        try {
-          // Update 0G balance for the wallet from blockchain
-          const updatedWallet = await updateOGBalance(walletData);
-
-          // Save blockchain keys to localStorage if they don't exist or are different
-          const existingWallet = localStorage.getItem("wallet");
-          if (
-            !existingWallet ||
-            JSON.parse(existingWallet).address !== agentPublicKey ||
-            JSON.parse(existingWallet).privateKey !== agentPrivateKey
-          ) {
-            localStorage.setItem(
-              "wallet",
-              JSON.stringify({
-                address: agentPublicKey,
-                privateKey: agentPrivateKey,
-              })
-            );
-          }
-
-          setWallet(updatedWallet);
-        } catch (error) {
-          console.error("Error updating 0G balance:", error);
-          setWallet(walletData);
-        }
       } else {
-        // No keys on blockchain, check localStorage first
-        const existingWallet = localStorage.getItem("wallet");
-        let walletData: WalletData;
+        walletData = getOrCreateWallet();
+      }
 
-        if (existingWallet) {
-          // Use existing wallet from localStorage
-          const parsedWallet = JSON.parse(existingWallet);
-          walletData = {
-            address: parsedWallet.address,
-            privateKey: parsedWallet.privateKey,
-            balance: 0,
-            ogBalance: 0,
-            transactions: [],
-          };
-        } else {
-          // No wallet in localStorage, create a new one
-          walletData = getOrCreateWallet();
-        }
-
-        try {
-          // Update 0G balance
-          const updatedWallet = await updateOGBalance(walletData);
-          setWallet(updatedWallet);
-        } catch (error) {
-          console.error("Error updating 0G balance:", error);
-          setWallet(walletData);
-        }
+      try {
+        const updatedWallet = await updateOGBalance(walletData);
+        setWallet(updatedWallet);
+      } catch {
+        setWallet(walletData);
       }
 
       setIsLoading(false);
     };
 
     fetchWallet();
-  }, [agentPublicKey, agentPrivateKey]);
+  }, []);
 
   const refreshOGBalance = async () => {
     if (!wallet) return;
@@ -166,15 +132,100 @@ export default function WalletPage() {
     return `${ogTestnet.blockExplorers.default.url}/address/${address}`;
   };
 
-  const handleSendEduTokens = async (e: React.FormEvent) => {
+  const handleDepositOG = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!wallet) return;
+    if (!wallet || !metaMaskAddress) {
+      toast({
+        title: "Connect Wallet",
+        description: "Connect your wallet before depositing 0G.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    if (!recipientAddress || !sendAmount) {
+    const amount = parseFloat(depositAmount);
+
+    if (isNaN(amount) || amount <= 0) {
       toast({
         title: "Error",
-        description: "Please enter a recipient address and amount",
+        description: "Please enter a valid deposit amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDepositing(true);
+
+    try {
+      const txHash = await sendTransactionAsync({
+        to: wallet.address as `0x${string}`,
+        value: parseEther(depositAmount),
+      });
+
+      const walletWithTx = addTransaction(wallet, {
+        type: "deposit",
+        amount,
+        description: "Deposit from connected wallet",
+        hash: txHash,
+      });
+      setWallet(walletWithTx);
+
+      toast({
+        title: "Deposit Submitted",
+        description: "Your wallet was prompted to send 0G to the agent wallet.",
+        variant: "default",
+        action: (
+          <ToastAction altText="View on Explorer">
+            <a
+              href={`${ogTestnet.blockExplorers.default.url}/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View
+            </a>
+          </ToastAction>
+        ),
+      });
+
+      setDepositAmount("");
+      setDepositOpen(false);
+      setTimeout(() => refreshOGBalance(), 2500);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to submit deposit";
+      const rejected =
+        message.includes("User rejected") ||
+        message.includes("rejected") ||
+        message.includes("denied");
+
+      if (!rejected) {
+        toast({
+          title: "Deposit Failed",
+          description: message,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsDepositing(false);
+    }
+  };
+
+  const handleWithdrawOG = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!wallet || !metaMaskAddress) {
+      toast({
+        title: "Connect Wallet",
+        description: "Connect your wallet before withdrawing 0G.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!sendAmount) {
+      toast({
+        title: "Error",
+        description: "Please enter a withdrawal amount",
         variant: "destructive",
       });
       return;
@@ -205,9 +256,9 @@ export default function WalletPage() {
     try {
       const result = await sendOGTokens(
         wallet,
-        recipientAddress,
+        metaMaskAddress,
         amount,
-        "0G Transfer"
+        "Withdraw to connected wallet"
       );
 
       if (result.success) {
@@ -232,9 +283,8 @@ export default function WalletPage() {
         const updatedWallet = await updateOGBalance(wallet);
         setWallet(updatedWallet);
 
-        // Reset form
-        setRecipientAddress("");
         setSendAmount("");
+        setWithdrawOpen(false);
       } else {
         toast({
           title: "Error",
@@ -256,7 +306,7 @@ export default function WalletPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="page-shell flex min-h-screen flex-col">
         <Navbar />
         <main className="flex-1 flex items-center justify-center">
           <RefreshCw className="h-8 w-8 animate-spin text-primary" />
@@ -266,371 +316,426 @@ export default function WalletPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-shell flex h-screen flex-col overflow-hidden">
       <Navbar />
-      <main className="flex-1 p-4 md:p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center mb-6">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm" className="mr-2">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-            </Link>
-            <h1 className="text-2xl font-bold">
-              <span className="neon-text-purple">Agent Wallet</span>
-            </h1>
-          </div>
-
-          {wallet && (
-            <div className="space-y-6">
-              {/* Wallet Overview */}
-              <div className="glass-card p-6 rounded-lg neon-border">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                  <div className="flex items-center">
-                    <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mr-4">
-                      <WalletIcon className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-semibold">Your Wallet</h2>
-                      <p className="text-sm text-muted-foreground">
-                        Manage your assets and transactions
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <div className="glass p-4 rounded-lg">
-                      <p className="text-sm text-muted-foreground">
-                        USD Balance
-                      </p>
-                      <p className="text-2xl font-bold neon-text-purple">
-                        ${wallet.balance.toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="glass p-4 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">
-                          0G Balance
-                        </p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={refreshOGBalance}
-                          disabled={isRefreshingBalance}
-                          className="ml-2 hover:bg-primary/10 transition-all duration-300"
-                        >
-                          <RefreshCw
-                            className={`h-4 w-4 ${
-                              isRefreshingBalance ? "animate-spin" : ""
-                            }`}
-                          />
-                        </Button>
-                      </div>
-                      <p className="text-2xl font-bold neon-text-green">
-                        {wallet.ogBalance.toLocaleString()} 0G
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Map Wallet Button */}
-                <div className="mb-4">
-                  <Button
-                    variant="outline"
-                    className="w-full neon-border-button relative"
-                    disabled={
-                      isPublicKeyLoading ||
-                      isPrivateKeyLoading ||
-                      !!(
-                        agentPublicKey &&
-                        agentPrivateKey &&
-                        agentPublicKey !== "" &&
-                        agentPrivateKey !== ""
-                      )
-                    }
-                    onClick={async () => {
-                      if (!wallet) return;
-
-                      // Additional check to prevent mapping if already mapped
-                      if (
-                        agentPublicKey &&
-                        agentPrivateKey &&
-                        agentPublicKey !== "" &&
-                        agentPrivateKey !== ""
-                      ) {
-                        toast({
-                          title: "Already Mapped",
-                          description:
-                            "This wallet is already mapped to the agent service.",
-                          variant: "default",
-                        });
-                        return;
-                      }
-
-                      try {
-                        // Call the linkKeys function from the contract
-                        const tx = await mapWallet({
-                          address: contractAddress,
-                          abi: abi,
-                          functionName: "linkKeys",
-                          args: [wallet.privateKey, wallet.address],
-                        });
-
-                        toast({
-                          title: "Wallet Mapped Successfully",
-                          description:
-                            "Your wallet has been linked to the agent service.",
-                          variant: "default",
-                          action: (
-                            <ToastAction altText="View on Explorer">
-                              <a
-                                href={`${ogTestnet.blockExplorers.default.url}/tx/${tx}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                View on Explorer
-                              </a>
-                            </ToastAction>
-                          ),
-                        });
-
-                        // Refresh the page to load the new wallet
-                        window.location.reload();
-                      } catch (error) {
-                        console.error("Error mapping wallet:", error);
-                        toast({
-                          title: "Error",
-                          description:
-                            "Failed to map wallet. Please try again.",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                  >
-                    {isPublicKeyLoading || isPrivateKeyLoading ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Fetching Wallet Info...
-                      </>
-                    ) : agentPublicKey &&
-                      agentPrivateKey &&
-                      agentPublicKey !== "" &&
-                      agentPrivateKey !== "" ? (
-                      <>
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Wallet Already Mapped
-                      </>
-                    ) : (
-                      <>
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Map Wallet to Agent
-                      </>
-                    )}
+      <main className="h-[calc(100vh-5rem)] overflow-hidden p-3 md:p-4">
+        {wallet && (
+          <div className="mx-auto flex h-full max-w-6xl flex-col gap-3">
+            <div className="flex shrink-0 items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Link href="/dashboard">
+                  <Button variant="ghost" size="sm" className="rounded-full">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
                   </Button>
+                </Link>
+                <div>
+                  <p className="section-label mb-1">Single Wallet Interface</p>
+                  <h1 className="font-heading text-4xl leading-none md:text-5xl">
+                    Agent Wallet
+                  </h1>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full border-border"
+                disabled={isMappingLoading || !!isAlreadyMapped || !metaMaskAddress}
+                onClick={async () => {
+                  if (!wallet || !metaMaskAddress) return;
+
+                  if (isAlreadyMapped) {
+                    toast({
+                      title: "Already Mapped",
+                      description: "This wallet is already mapped to the agent service.",
+                      variant: "default",
+                    });
+                    return;
+                  }
+
+                  try {
+                    // Step 1: Sign a message proving MetaMask wallet ownership
+                    const message = `AlphaScan:link:${metaMaskAddress}:${wallet.address}`;
+                    const signature = await signMessageAsync({ message });
+
+                    // Step 2: Store the encrypted private key in the backend (over HTTPS)
+                    const res = await fetch(`${BACKEND_URL}/store-agent-key`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        user_wallet: metaMaskAddress,
+                        agent_address: wallet.address,
+                        agent_private_key: wallet.privateKey,
+                        signature,
+                      }),
+                    });
+                    if (!res.ok) {
+                      throw new Error("Failed to store agent key in backend");
+                    }
+
+                    // Step 3: Register the link on-chain (only the agent address, no private key)
+                    const tx = await mapWallet({
+                      address: contractAddress,
+                      abi: abi,
+                      functionName: "linkKeys",
+                      args: [wallet.address],
+                    });
+
+                    toast({
+                      title: "Wallet Mapped Successfully",
+                      description: "Your wallet has been linked to the agent service.",
+                      variant: "default",
+                      action: (
+                        <ToastAction altText="View on Explorer">
+                          <a
+                            href={`${ogTestnet.blockExplorers.default.url}/tx/${tx}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            View on Explorer
+                          </a>
+                        </ToastAction>
+                      ),
+                    });
+
+                    window.location.reload();
+                  } catch (error) {
+                    console.error("Error mapping wallet:", error);
+                    toast({
+                      title: "Error",
+                      description: "Failed to map wallet. Please try again.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                {isMappingLoading ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Checking...
+                  </>
+                ) : isAlreadyMapped ? (
+                  <>
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Mapped
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Map Wallet
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <section className="glass-card grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden rounded-3xl p-4 lg:grid-cols-[1.05fr_0.95fr]">
+              <div className="flex min-h-0 flex-col gap-3">
+                <div className="rounded-3xl bg-primary/15 p-5">
+                  <div className="mb-5 flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/20">
+                        <WalletIcon className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                          Available Balance
+                        </p>
+                        <p className="font-heading text-5xl leading-none text-foreground">
+                          {wallet.ogBalance.toLocaleString()} 0G
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={refreshOGBalance}
+                      disabled={isRefreshingBalance}
+                      className="rounded-full hover:bg-primary/10"
+                    >
+                      <RefreshCw
+                        className={`h-4 w-4 ${isRefreshingBalance ? "animate-spin" : ""}`}
+                      />
+                    </Button>
+                  </div>
+
+                  <div className="relative grid grid-cols-2 gap-3">
+                    <div className="relative">
+                      <Button
+                        type="button"
+                        className="h-12 w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                        onClick={() => {
+                          setDepositOpen((open) => !open);
+                          setWithdrawOpen(false);
+                        }}
+                      >
+                        <ArrowDownCircle className="mr-2 h-4 w-4" />
+                        Deposit
+                      </Button>
+
+                      {depositOpen && (
+                        <form
+                          onSubmit={handleDepositOG}
+                          className="absolute left-0 top-14 z-20 w-[min(22rem,calc(100vw-2rem))] rounded-3xl border border-primary/20 bg-background/95 p-4 shadow-2xl backdrop-blur-xl"
+                        >
+                          <div className="mb-3">
+                            <p className="font-heading text-2xl leading-none">Deposit 0G</p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Sends from your connected wallet to this agent wallet.
+                            </p>
+                          </div>
+                          <Label htmlFor="deposit-amount">Amount</Label>
+                          <Input
+                            id="deposit-amount"
+                            type="number"
+                            step="0.000001"
+                            min="0"
+                            placeholder="0.0"
+                            value={depositAmount}
+                            onChange={(event) => setDepositAmount(event.target.value)}
+                            className="glass mt-1 h-11 rounded-full"
+                          />
+                          <p className="mt-2 truncate font-mono text-[11px] text-muted-foreground">
+                            To: {wallet.address}
+                          </p>
+                          <div className="mt-4 flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-10 flex-1 rounded-full"
+                              onClick={() => setDepositOpen(false)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="submit"
+                              className="h-10 flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                              disabled={isDepositing}
+                            >
+                              {isDepositing ? (
+                                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                              ) : (
+                                <Send className="mr-2 h-4 w-4" />
+                              )}
+                              Send
+                            </Button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+
+                    <div className="relative">
+                      <Button
+                        type="button"
+                        className="h-12 w-full rounded-full bg-foreground text-background hover:bg-foreground/90"
+                        onClick={() => {
+                          setWithdrawOpen((open) => !open);
+                          setDepositOpen(false);
+                        }}
+                      >
+                        <ArrowUpCircle className="mr-2 h-4 w-4" />
+                        Withdraw
+                      </Button>
+
+                      {withdrawOpen && (
+                        <form
+                          onSubmit={handleWithdrawOG}
+                          className="absolute right-0 top-14 z-20 w-[min(22rem,calc(100vw-2rem))] rounded-3xl border border-primary/20 bg-background/95 p-4 shadow-2xl backdrop-blur-xl"
+                        >
+                          <div className="mb-3">
+                            <p className="font-heading text-2xl leading-none">Withdraw 0G</p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Sends from the agent wallet back to your connected wallet.
+                            </p>
+                          </div>
+                          <Label htmlFor="withdraw-amount">Amount</Label>
+                          <Input
+                            id="withdraw-amount"
+                            type="number"
+                            step="0.000001"
+                            min="0"
+                            placeholder="0.0"
+                            value={sendAmount}
+                            onChange={(event) => setSendAmount(event.target.value)}
+                            className="glass mt-1 h-11 rounded-full"
+                          />
+                          <p className="mt-2 truncate font-mono text-[11px] text-muted-foreground">
+                            To: {metaMaskAddress ?? "Connect wallet"}
+                          </p>
+                          <div className="mt-4 flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-10 flex-1 rounded-full"
+                              onClick={() => setWithdrawOpen(false)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="submit"
+                              className="h-10 flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                              disabled={isSendingTokens}
+                            >
+                              {isSendingTokens ? (
+                                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                              ) : (
+                                <Send className="mr-2 h-4 w-4" />
+                              )}
+                              Send
+                            </Button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Wallet Keys and Address */}
-                <div className="space-y-4">
-                  <div className="glass p-4 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-2">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="glass rounded-2xl p-4">
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                      USD Balance
+                    </p>
+                    <p className="mt-1 text-2xl font-semibold text-foreground">
+                      ${wallet.balance.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="glass rounded-2xl p-4">
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                      Network
+                    </p>
+                    <p className="mt-1 text-2xl font-semibold text-foreground">0G</p>
+                  </div>
+                </div>
+
+                <div className="glass min-h-0 flex-1 rounded-2xl p-4">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground">
                       Wallet Address
                     </p>
-                    <div className="flex items-center justify-between">
-                      <p className="font-mono text-sm truncate">
-                        {wallet.address}
-                      </p>
-                      <div className="flex items-center">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(wallet.address, "address")}
+                        className="h-7 rounded-full px-2 text-xs hover:bg-primary/10"
+                      >
+                        {copied === "address" ? "Copied" : <Copy className="h-3.5 w-3.5" />}
+                      </Button>
+                      <a
+                        href={getExplorerAddressUrl(wallet.address)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() =>
-                            copyToClipboard(wallet.address, "address")
-                          }
-                          className="ml-2 hover:bg-primary/10 transition-all duration-300"
+                          className="h-7 rounded-full px-2 hover:bg-primary/10"
                         >
-                          {copied === "address" ? (
-                            "Copied!"
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
+                          <ExternalLink className="h-3.5 w-3.5" />
                         </Button>
-                        <a
-                          href={getExplorerAddressUrl(wallet.address)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="ml-2 hover:bg-primary/10 transition-all duration-300"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        </a>
-                      </div>
+                      </a>
                     </div>
                   </div>
+                  <p className="break-all font-mono text-xs text-foreground/80">
+                    {wallet.address}
+                  </p>
 
-                  <div className="glass p-4 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Private Key
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <p className="font-mono text-sm truncate">
-                        {showPrivateKey
-                          ? wallet.privateKey
-                          : "••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"}
+                  <div className="mt-4 border-t border-border/60 pt-4">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                        Private Key
                       </p>
-                      <div className="flex items-center">
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowPrivateKey(!showPrivateKey)}
-                          className="ml-2 hover:bg-primary/10 transition-all duration-300"
+                          className="h-7 rounded-full px-2 hover:bg-primary/10"
                         >
                           {showPrivateKey ? (
-                            <EyeOff className="h-4 w-4" />
+                            <EyeOff className="h-3.5 w-3.5" />
                           ) : (
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-3.5 w-3.5" />
                           )}
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() =>
-                            copyToClipboard(wallet.privateKey, "private")
-                          }
-                          className="ml-2 hover:bg-primary/10 transition-all duration-300"
+                          onClick={() => copyToClipboard(wallet.privateKey, "private")}
+                          className="h-7 rounded-full px-2 hover:bg-primary/10"
                           disabled={!showPrivateKey}
                         >
-                          {copied === "private" ? (
-                            "Copied!"
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
+                          {copied === "private" ? "Copied" : <Copy className="h-3.5 w-3.5" />}
                         </Button>
                       </div>
                     </div>
+                    <p className="break-all font-mono text-xs text-foreground/80">
+                      {showPrivateKey
+                        ? wallet.privateKey
+                        : "••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••"}
+                    </p>
+                    <p className="mt-3 text-xs text-fuchsia-300">
+                      Never share your private key. Keep it secure.
+                    </p>
                   </div>
-                </div>
-
-                <div className="mt-4 text-sm text-muted-foreground">
-                  <p className="text-yellow-500">
-                    ⚠️ Never share your private key with anyone. Keep it secure.
-                  </p>
                 </div>
               </div>
 
-              {/* Send 0G Tokens */}
-              <div className="glass-card p-6 rounded-lg neon-border">
-                <h2 className="text-xl font-semibold mb-4">Send 0G Tokens</h2>
-
-                <form onSubmit={handleSendEduTokens} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="recipient">Recipient Address</Label>
-                    <Input
-                      id="recipient"
-                      placeholder="0x..."
-                      value={recipientAddress}
-                      onChange={(e) => setRecipientAddress(e.target.value)}
-                      className="glass"
-                    />
+              <div className="glass flex min-h-0 flex-col overflow-hidden rounded-3xl p-4">
+                  <div className="mb-3 flex shrink-0 items-center justify-between">
+                    <h2 className="font-heading text-3xl leading-none">Transactions</h2>
+                    <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                      {wallet.transactions.length} total
+                    </span>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="amount">Amount (0G)</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      step="0.000001"
-                      min="0"
-                      placeholder="0.0"
-                      value={sendAmount}
-                      onChange={(e) => setSendAmount(e.target.value)}
-                      className="glass"
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full neon-border-button relative"
-                    disabled={isSendingTokens}
-                  >
-                    {isSendingTokens ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4 mr-2" />
-                        Send 0G
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </div>
-
-              {/* Transaction History */}
-              <div className="glass-card p-6 rounded-lg neon-border">
-                <h2 className="text-xl font-semibold mb-4">
-                  Transaction History
-                </h2>
-
-                {wallet.transactions.length > 0 ? (
-                  <div className="space-y-3">
-                    {wallet.transactions.map((tx) => (
-                      <div
-                        key={tx.id}
-                        className="glass p-4 rounded-lg flex items-center"
-                      >
+                  {wallet.transactions.length > 0 ? (
+                    <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+                      {wallet.transactions.map((tx) => (
                         <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
-                            tx.type === "deposit"
-                              ? "bg-green-500/20"
-                              : "bg-red-500/20"
-                          }`}
+                          key={tx.id}
+                          className="flex items-center rounded-2xl border border-border/60 bg-background/40 p-3"
                         >
-                          {tx.type === "deposit" ? (
-                            <ArrowDownCircle className="h-5 w-5 text-green-500" />
-                          ) : (
-                            <ArrowUpCircle className="h-5 w-5 text-red-500" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between">
-                            <p className="font-medium">{tx.description}</p>
-                            <p
-                              className={`font-semibold ${
-                                tx.type === "deposit"
-                                  ? "text-green-500"
-                                  : "text-red-500"
-                              }`}
-                            >
-                              {tx.type === "deposit" ? "+" : "-"}${tx.amount}
+                          <div
+                            className={`mr-3 flex h-9 w-9 items-center justify-center rounded-full ${
+                              tx.type === "deposit"
+                                ? "bg-green-500/20"
+                                : "bg-red-500/20"
+                            }`}
+                          >
+                            {tx.type === "deposit" ? (
+                              <ArrowDownCircle className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <ArrowUpCircle className="h-4 w-4 text-red-500" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex justify-between gap-3">
+                              <p className="truncate text-sm font-medium">{tx.description}</p>
+                              <p
+                                className={`text-sm font-semibold ${
+                                  tx.type === "deposit" ? "text-green-500" : "text-red-500"
+                                }`}
+                              >
+                                {tx.type === "deposit" ? "+" : "-"}${tx.amount}
+                              </p>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {formatDate(tx.timestamp)}
+                              {tx.hash ? ` · ${formatKey(tx.hash)}` : ""}
                             </p>
                           </div>
-                          <p className="text-xs text-muted-foreground">
-                            {formatDate(tx.timestamp)}
-                          </p>
-                          {tx.hash && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Hash: {formatKey(tx.hash)}
-                            </p>
-                          )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-4">
-                    No transactions yet
-                  </p>
-                )}
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-border/70 text-sm text-muted-foreground">
+                      No transactions yet
+                    </div>
+                  )}
               </div>
-            </div>
-          )}
-        </div>
+            </section>
+          </div>
+        )}
       </main>
     </div>
   );

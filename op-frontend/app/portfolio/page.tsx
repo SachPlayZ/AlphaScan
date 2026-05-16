@@ -80,8 +80,30 @@ const mockPortfolioAssets: PortfolioAsset[] = [
   },
 ];
 
+function calculateMetrics(assets: PortfolioAsset[]) {
+  let totalValue = 0;
+  let totalCost = 0;
+
+  assets.forEach((asset) => {
+    const currentValue = asset.quantity * asset.currentPrice;
+    const costBasis = asset.quantity * asset.buyPrice;
+
+    totalValue += currentValue;
+    totalCost += costBasis;
+  });
+
+  const pnl = totalValue - totalCost;
+  const pnlPercentage = totalCost > 0 ? (pnl / totalCost) * 100 : 0;
+
+  return {
+    totalValue,
+    pnl,
+    pnlPercentage,
+  };
+}
+
 export default function PortfolioPage() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [portfolioAssets, setPortfolioAssets] =
@@ -90,7 +112,6 @@ export default function PortfolioPage() {
   const [totalProfitLoss, setTotalProfitLoss] = useState(0);
   const [profitLossPercentage, setProfitLossPercentage] = useState(0);
 
-  console.log(isLoading);
   useEffect(() => {
     const fetchWallet = async () => {
       setIsLoading(true);
@@ -111,28 +132,11 @@ export default function PortfolioPage() {
     };
 
     fetchWallet();
-    calculatePortfolioMetrics();
+    const metrics = calculateMetrics(mockPortfolioAssets);
+    setPortfolioValue(metrics.totalValue);
+    setTotalProfitLoss(metrics.pnl);
+    setProfitLossPercentage(metrics.pnlPercentage);
   }, []);
-
-  const calculatePortfolioMetrics = () => {
-    let totalValue = 0;
-    let totalCost = 0;
-
-    portfolioAssets.forEach((asset) => {
-      const currentValue = asset.quantity * asset.currentPrice;
-      const costBasis = asset.quantity * asset.buyPrice;
-
-      totalValue += currentValue;
-      totalCost += costBasis;
-    });
-
-    const pnl = totalValue - totalCost;
-    const pnlPercentage = totalCost > 0 ? (pnl / totalCost) * 100 : 0;
-
-    setPortfolioValue(totalValue);
-    setTotalProfitLoss(pnl);
-    setProfitLossPercentage(pnlPercentage);
-  };
 
   const refreshPortfolio = async () => {
     setIsRefreshing(true);
@@ -155,7 +159,10 @@ export default function PortfolioPage() {
       });
 
       setPortfolioAssets(updatedAssets);
-      calculatePortfolioMetrics();
+      const metrics = calculateMetrics(updatedAssets);
+      setPortfolioValue(metrics.totalValue);
+      setTotalProfitLoss(metrics.pnl);
+      setProfitLossPercentage(metrics.pnlPercentage);
       setIsRefreshing(false);
     }, 1500);
   };
@@ -183,16 +190,17 @@ export default function PortfolioPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-shell flex min-h-screen flex-col">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="page-container">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">
+            <p className="section-label mb-3">Portfolio</p>
+            <h1 className="font-heading text-5xl leading-none text-foreground mb-3">
               AI-Managed Portfolio
             </h1>
-            <p className="text-gray-400">
+            <p className="font-light text-muted-foreground">
               Track the performance of assets managed by your AI agent
             </p>
           </div>
@@ -216,7 +224,7 @@ export default function PortfolioPage() {
 
         {/* Portfolio Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="glass-card neon-border">
+          <Card className="glass-card rounded-3xl">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium">
                 Total Portfolio Value
@@ -232,7 +240,7 @@ export default function PortfolioPage() {
             </CardContent>
           </Card>
 
-          <Card className="glass-card neon-border">
+          <Card className="glass-card rounded-3xl">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium">
                 Total Profit/Loss
@@ -261,7 +269,7 @@ export default function PortfolioPage() {
             </CardContent>
           </Card>
 
-          <Card className="glass-card neon-border">
+          <Card className="glass-card rounded-3xl">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium">
                 AI Performance Score
@@ -286,7 +294,7 @@ export default function PortfolioPage() {
         </div>
 
         {/* Portfolio Assets Table */}
-        <Card className="glass-card neon-border mb-8">
+        <Card className="glass-card mb-8 rounded-3xl">
           <CardHeader>
             <CardTitle>Portfolio Assets</CardTitle>
             <CardDescription>
@@ -389,7 +397,7 @@ export default function PortfolioPage() {
         </Card>
 
         {/* AI Strategy Insights */}
-        <Card className="glass-card neon-border">
+        <Card className="glass-card rounded-3xl">
           <CardHeader>
             <CardTitle>AI Strategy Insights</CardTitle>
             <CardDescription>
@@ -446,7 +454,7 @@ export default function PortfolioPage() {
                           </span>
                         </li>
                         <li className="flex items-start">
-                          <span className="h-5 w-5 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center mr-2 mt-0.5">
+                          <span className="h-5 w-5 rounded-full bg-violet-500/20 text-violet-300 flex items-center justify-center mr-2 mt-0.5">
                             ↺
                           </span>
                           <span>

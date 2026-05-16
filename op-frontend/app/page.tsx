@@ -5,412 +5,388 @@ import {
   BrainCircuit,
   MessageSquare,
   Search,
-  Twitter,
+  ShieldCheck,
+  Wallet,
 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
-import Image from "next/image";
+
+const tickerItems = [
+  "Telegram Alpha",
+  "Wallet Mapping",
+  "Social Velocity",
+  "0G Agent Wallets",
+  "Sentiment Drift",
+  "Execution Logs",
+  "Market Memory",
+  "Risk Filters",
+  "Token Balance Checks",
+  "Trust Layer",
+];
+
+const features = [
+  {
+    icon: Search,
+    title: "Social Scanning",
+    description:
+      "Continuously watches Telegram communities and market chatter to catch early signals before they become obvious.",
+  },
+  {
+    icon: BrainCircuit,
+    title: "Agent Reasoning",
+    description:
+      "Routes raw group text through analysis, validation, historical context, and PNL estimation steps.",
+  },
+  {
+    icon: Wallet,
+    title: "Wallet-Aware Actions",
+    description:
+      "Links your agent wallet to balances, transactions, and execution readiness without exposing custody in the UI.",
+  },
+];
+
+const steps = [
+  {
+    n: "01",
+    title: "Connect your wallet",
+    body: "Start with the same wallet you use for the 0G testnet and agent configuration.",
+  },
+  {
+    n: "02",
+    title: "Attach a Telegram source",
+    body: "Pick the group and topic you want AlphaScan to monitor for emerging market narratives.",
+  },
+  {
+    n: "03",
+    title: "Agents analyze signal",
+    body: "Text, tweets, trend data, balances, and historical context move through a visible agent pipeline.",
+  },
+  {
+    n: "04",
+    title: "Review actions",
+    body: "Inspect the reasoning trail, confidence, output, and portfolio impact before acting on a signal.",
+  },
+];
+
+const signalCards = [
+  { label: "Social velocity", value: "+245%", fill: "85%", Icon: MessageSquare },
+  { label: "Trust score", value: "0.82", fill: "74%", Icon: ShieldCheck },
+  { label: "Volume momentum", value: "+178%", fill: "66%", Icon: BarChart3 },
+];
+
+const faq = [
+  {
+    q: "What does AlphaScan monitor?",
+    a: "The current product centers on Telegram groups, agent logs, token balances, historical data, tweet analysis, and agent wallet activity.",
+  },
+  {
+    q: "Does AlphaScan trade automatically?",
+    a: "The interface exposes agent actions and wallet tools, but the UI keeps the reasoning and state visible before users rely on outputs.",
+  },
+  {
+    q: "Why connect a wallet?",
+    a: "Wallet connection powers the dashboard, agent-wallet mapping, balance checks, and 0G testnet workflows.",
+  },
+  {
+    q: "Can I review what the agent did?",
+    a: "Yes. The Agent Actions and Agent Lessons areas preserve the timeline, inputs, outputs, confidence, and learned patterns.",
+  },
+];
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-shell flex min-h-screen flex-col">
       <Navbar />
+      <div className="grain-overlay" aria-hidden />
+
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
-          <div className="container px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
-              <div className="flex flex-col justify-center space-y-4">
-                <div className="space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                    Market Intelligence{" "}
-                    <span className="neon-text-purple">Powered by AI</span>
-                  </h1>
-                  <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Scanio analyzes market trends across social platforms to
-                    provide you with data-driven insights for smarter trading
-                    decisions.
-                  </p>
+        <section className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-black">
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(circle at 18% 18%, rgba(139,92,246,0.48), transparent 28rem), radial-gradient(circle at 82% 20%, rgba(217,70,239,0.28), transparent 26rem), linear-gradient(140deg, #080313 0%, #17102d 48%, #2a1248 100%)",
+            }}
+          />
+          <div
+            className="absolute inset-0 opacity-30"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px)",
+              backgroundSize: "72px 72px",
+              maskImage: "linear-gradient(to bottom, black, transparent 80%)",
+            }}
+          />
+          <div className="absolute inset-x-0 bottom-0 h-56 bg-gradient-to-t from-background to-transparent" />
+
+          <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center px-6 pb-36 pt-36 text-center">
+            <div className="animate-fade-rise liquid-glass mb-10 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-white/80">
+              <span className="h-1.5 w-1.5 rounded-full bg-white/60 animate-pulse" />
+              Agentic market intelligence · Built for 0G
+            </div>
+
+            <h1
+              className="animate-fade-rise editorial-title max-w-6xl text-white"
+              style={{ fontSize: "clamp(3.8rem, 10vw, 9rem)" }}
+            >
+              Find alpha
+              <br />
+              <span className="italic opacity-80">before it moves.</span>
+            </h1>
+
+            <p className="animate-fade-rise-delay mt-8 max-w-2xl text-base font-light leading-relaxed text-white/60 sm:text-lg">
+              AlphaScan turns noisy Telegram groups, market traces, and wallet
+              context into auditable AI-agent decisions. Follow every signal from
+              raw conversation to validated action.
+            </p>
+
+            <div className="animate-fade-rise-delay-2 mt-12 flex flex-col items-center gap-4 sm:flex-row">
+              <Link
+                href="/login"
+                className="liquid-glass rounded-full px-14 py-5 text-base font-medium text-white transition-transform hover:scale-[1.03]"
+              >
+                Start scanning
+              </Link>
+              <Link
+                href="/dashboard"
+                className="text-sm font-light tracking-wide text-white/50 transition-colors hover:text-white/80"
+              >
+                Open dashboard →
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <div className="w-full overflow-hidden bg-primary py-4">
+          <div className="flex w-max animate-[ticker_34s_linear_infinite]">
+            {[...tickerItems, ...tickerItems].map((item, index) => (
+              <span
+                key={`${item}-${index}`}
+                className="flex shrink-0 items-center gap-5 whitespace-nowrap px-6 text-sm font-medium tracking-wide text-primary-foreground"
+              >
+                {item}
+                <span className="text-xl leading-none text-primary-foreground/35">·</span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <section className="w-full bg-foreground py-24 text-background">
+          <div className="container mx-auto max-w-5xl px-6">
+            <p className="mb-16 text-center text-xs font-semibold uppercase tracking-[0.2em] text-background/60">
+              Live signal preview
+            </p>
+            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="rounded-3xl border border-background/10 bg-background/[0.04] p-7">
+                <div className="mb-6 flex items-center justify-between border-b border-background/10 pb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                    <span className="text-xs font-bold uppercase tracking-widest text-background/50">
+                      Telegram trend
+                    </span>
+                  </div>
+                  <span className="font-heading text-3xl">ABC/0G</span>
                 </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Button
-                    size="lg"
-                    className="bg-primary hover:bg-primary/80 neon-glow group transition-all duration-300 ease-in-out"
-                    asChild
-                  >
-                    <Link href="/login">
-                      Get Started
-                      <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 ease-in-out group-hover:translate-x-1" />
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="lg" className="neon-border">
-                    Learn More
-                  </Button>
-                </div>
-              </div>
-              <div className="flex items-center justify-center">
-                <div className="relative h-[450px] w-full overflow-hidden rounded-xl glass p-4">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-full max-w-md space-y-4 rounded-lg glass-card p-6">
-                      <div className="space-y-2">
-                        <h3 className="text-xl font-bold neon-text-cyan">
-                          Market Analysis
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          Our AI has detected increased activity for token ABC
-                        </p>
+                <div className="space-y-5">
+                  {signalCards.map(({ label, value, fill, Icon }) => (
+                    <div key={label} className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="flex items-center gap-2 text-background/70">
+                          <Icon className="h-4 w-4" />
+                          {label}
+                        </span>
+                        <span className="font-medium tabular-nums text-background">
+                          {value}
+                        </span>
                       </div>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <MessageSquare className="h-4 w-4 text-primary" />
-                              <span className="text-sm font-medium">
-                                Social Mentions
-                              </span>
-                            </div>
-                            <span className="text-sm font-medium text-accent">
-                              +245%
-                            </span>
-                          </div>
-                          <div className="h-2 w-full rounded-full bg-muted">
-                            <div className="h-full w-[85%] rounded-full bg-primary" />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <Twitter className="h-4 w-4 text-secondary" />
-                              <span className="text-sm font-medium">
-                                Twitter Sentiment
-                              </span>
-                            </div>
-                            <span className="text-sm font-medium text-accent">
-                              Positive
-                            </span>
-                          </div>
-                          <div className="h-2 w-full rounded-full bg-muted">
-                            <div className="h-full w-[75%] rounded-full bg-accent" />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <BarChart3 className="h-4 w-4 text-secondary" />
-                              <span className="text-sm font-medium">
-                                Trading Volume
-                              </span>
-                            </div>
-                            <span className="text-sm font-medium text-accent">
-                              +178%
-                            </span>
-                          </div>
-                          <div className="h-2 w-full rounded-full bg-muted">
-                            <div className="h-full w-[65%] rounded-full bg-secondary" />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="rounded-lg bg-background/50 p-3 neon-border">
-                        <p className="text-sm">
-                          <strong className="neon-text-cyan">
-                            AI Insight:
-                          </strong>{" "}
-                          Token ABC shows strong community growth with positive
-                          sentiment across platforms. Consider reviewing for
-                          potential opportunity.
-                        </p>
+                      <div className="h-1.5 rounded-full bg-background/10">
+                        <div className="h-full rounded-full bg-primary" style={{ width: fill }} />
                       </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
 
-        <section id="features" className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg glass px-3 py-1 text-sm neon-border">
-                  Features
-                </div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                  Powered by{" "}
-                  <span className="neon-text-purple">Advanced AI</span>
+              <div className="rounded-3xl border border-background/10 bg-background/[0.04] p-7">
+                <p className="mb-5 text-xs font-bold uppercase tracking-widest text-background/50">
+                  Agent reading
+                </p>
+                <h2 className="font-heading text-5xl leading-[0.95]">
+                  Signal looks
+                  <br />
+                  <span className="italic opacity-80">actionable.</span>
                 </h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Our platform combines multiple data sources with AI analysis
-                  to provide you with actionable market intelligence.
-                </p>
-              </div>
-            </div>
-            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-2 lg:grid-cols-3">
-              <div className="flex flex-col items-center space-y-4 rounded-lg glass-card p-6 neon-border">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/20">
-                  <Search className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="text-xl font-bold neon-text-purple">
-                  Social Scanning
-                </h3>
-                <p className="text-center text-muted-foreground">
-                  Monitors conversations across platforms to identify emerging
-                  trends and opportunities.
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-4 rounded-lg glass-card p-6 neon-border">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary/20">
-                  <BrainCircuit className="h-8 w-8 text-secondary" />
-                </div>
-                <h3 className="text-xl font-bold neon-text-cyan">
-                  AI Analysis
-                </h3>
-                <p className="text-center text-muted-foreground">
-                  Advanced language models process information to separate
-                  signal from noise.
-                </p>
-              </div>
-              <div className="flex flex-col items-center space-y-4 rounded-lg glass-card p-6 neon-border">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent/20">
-                  <BarChart3 className="h-8 w-8 text-accent" />
-                </div>
-                <h3 className="text-xl font-bold neon-text-green">
-                  Market Insights
-                </h3>
-                <p className="text-center text-muted-foreground">
-                  Receive detailed reports on why certain assets are trending
-                  with supporting data.
+                <p className="mt-6 text-sm font-light leading-relaxed text-background/65">
+                  Community velocity is rising while validation remains above
+                  threshold. The next step is checking wallet readiness and
+                  historical volatility before execution.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        <section id="how-it-works" className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg glass px-3 py-1 text-sm neon-border">
-                  Process
-                </div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                  How <span className="neon-text-cyan">Scanio</span> Works
-                </h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Our transparent process helps you understand exactly how we
-                  generate insights.
-                </p>
-              </div>
+        <section id="features" className="w-full bg-background py-28">
+          <div className="container mx-auto max-w-5xl px-6">
+            <div className="mb-16">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                Signals
+              </p>
+              <h2
+                className="editorial-title text-foreground"
+                style={{ fontSize: "clamp(2.8rem, 5vw, 4.8rem)" }}
+              >
+                From chatter
+                <br />
+                <span className="italic">to conviction.</span>
+              </h2>
             </div>
-            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-8 py-12 md:grid-cols-2">
-              <div className="flex flex-col space-y-6">
-                <div className="flex items-start space-x-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground neon-glow">
-                    <span className="h-4 w-10 text-center text-sm leading-none">
-                      1
-                    </span>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              {features.map((feature) => (
+                <div key={feature.title} className="warm-card group space-y-5 p-8 hover:bg-primary/5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-foreground/10 bg-muted/60 transition-colors group-hover:border-primary/30">
+                    <feature.icon className="h-5 w-5 text-primary" />
                   </div>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold neon-text-purple">
-                      Data Collection
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Our system continuously monitors social platforms for
-                      discussions about market trends and specific assets.
+                  <div>
+                    <h3 className="text-lg font-medium text-foreground">{feature.title}</h3>
+                    <p className="mt-2 text-sm font-light leading-relaxed text-muted-foreground">
+                      {feature.description}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-start space-x-4">
-                  <div
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground"
-                    style={{ boxShadow: "0 0 5px #00c8ff, 0 0 20px #00c8ff" }}
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="how-it-works" className="w-full bg-muted py-28">
+          <div className="container mx-auto max-w-5xl px-6">
+            <div className="mb-20">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                Process
+              </p>
+              <h2
+                className="editorial-title text-foreground"
+                style={{ fontSize: "clamp(2.8rem, 5vw, 4.8rem)" }}
+              >
+                Your agent,
+                <br />
+                <span className="italic">fully visible.</span>
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 gap-x-20 gap-y-14 md:grid-cols-2">
+              {steps.map((step) => (
+                <div key={step.n} className="group flex gap-6">
+                  <span
+                    className="shrink-0 font-heading leading-none text-foreground/20 transition-colors duration-500 group-hover:text-primary/40"
+                    style={{ fontSize: "clamp(3.5rem, 6vw, 5rem)" }}
                   >
-                    <span className="h-4 w-10 text-center text-sm leading-none">
-                      2
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold neon-text-cyan">
-                      AI Processing
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Our language models analyze the collected data to identify
-                      meaningful patterns and filter out noise.
+                    {step.n}
+                  </span>
+                  <div className="space-y-2 pt-2">
+                    <h3 className="text-xl font-medium text-foreground">{step.title}</h3>
+                    <p className="text-[0.95rem] font-light leading-relaxed text-muted-foreground">
+                      {step.body}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-start space-x-4">
-                  <div
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-accent-foreground"
-                    style={{ boxShadow: "0 0 5px #00ff4c, 0 0 20px #00ff4c" }}
-                  >
-                    <span className="h-4 w-10 text-center text-sm leading-none">
-                      3
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold neon-text-green">
-                      Cross-Verification
-                    </h3>
-                    <p className="text-muted-foreground">
-                      The system cross-references information across multiple
-                      sources to validate trends and reduce false positives.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground neon-glow">
-                    <span className="h-4 w-10 text-center text-sm leading-none">
-                      4
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold neon-text-purple">
-                      Insight Generation
-                    </h3>
-                    <p className="text-muted-foreground">
-                      You receive detailed reports with the reasoning behind
-                      each insight, including the data sources used.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-center">
-                <div className="relative h-[450px] w-full overflow-hidden rounded-xl glass p-4">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Image
-                      width={400}
-                      height={400}
-                      src="/placeholder.svg?height=400&width=400"
-                      alt="AI Analysis Process Visualization"
-                      className="rounded-lg shadow-lg neon-border"
-                    />
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </section>
 
-        <section id="faq" className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg glass px-3 py-1 text-sm neon-border">
-                  FAQ
-                </div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                  Frequently Asked{" "}
-                  <span className="neon-text-green">Questions</span>
-                </h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Get answers to common questions about our platform.
-                </p>
-              </div>
+        <section id="faq" className="w-full bg-background py-28">
+          <div className="container mx-auto max-w-5xl px-6">
+            <div className="mb-16">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                FAQ
+              </p>
+              <h2
+                className="editorial-title text-foreground"
+                style={{ fontSize: "clamp(2.8rem, 5vw, 4.5rem)" }}
+              >
+                Questions,
+                <br />
+                <span className="italic">answered plainly.</span>
+              </h2>
             </div>
-            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-12 md:grid-cols-2">
-              <div className="space-y-2 glass-card p-6 rounded-lg neon-border">
-                <h3 className="text-xl font-bold neon-text-purple">
-                  How accurate are the insights?
-                </h3>
-                <p className="text-muted-foreground">
-                  Our system achieves over 85% accuracy in trend identification.
-                  However, all market analysis comes with inherent uncertainty,
-                  and we provide confidence scores with each insight.
-                </p>
-              </div>
-              <div className="space-y-2 glass-card p-6 rounded-lg neon-border">
-                <h3 className="text-xl font-bold neon-text-cyan">
-                  What data sources do you use?
-                </h3>
-                <p className="text-muted-foreground">
-                  We analyze public conversations from major social platforms,
-                  news sources, and market data. All data collection complies
-                  with platform terms of service.
-                </p>
-              </div>
-              <div className="space-y-2 glass-card p-6 rounded-lg neon-border">
-                <h3 className="text-xl font-bold neon-text-green">
-                  How often are insights updated?
-                </h3>
-                <p className="text-muted-foreground">
-                  Our system continuously monitors and processes data, with new
-                  insights typically generated every 15-30 minutes depending on
-                  market activity.
-                </p>
-              </div>
-              <div className="space-y-2 glass-card p-6 rounded-lg neon-border">
-                <h3 className="text-xl font-bold neon-text-purple">
-                  Is my data secure?
-                </h3>
-                <p className="text-muted-foreground">
-                  Yes, we employ enterprise-grade encryption and security
-                  practices. Your account information and preferences are never
-                  shared with third parties.
-                </p>
-              </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {faq.map((item) => (
+                <div key={item.q} className="warm-card p-7">
+                  <h3 className="font-medium text-foreground">{item.q}</h3>
+                  <p className="mt-3 text-sm font-light leading-relaxed text-muted-foreground">
+                    {item.a}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        <section className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
-                  Ready to <span className="neon-text-cyan">Transform</span>{" "}
-                  Your Market Analysis?
-                </h2>
-                <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                  Join thousands of traders using AI-powered insights to stay
-                  ahead of market trends.
-                </p>
-              </div>
-              <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                <Button
-                  size="lg"
-                  className="bg-primary hover:bg-primary/80 neon-glow group transition-all duration-300 ease-in-out"
-                  asChild
-                >
-                  <Link href="/login">
-                    Get Started
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 ease-in-out group-hover:translate-x-1" />
-                  </Link>
-                </Button>
-                <Button variant="outline" size="lg" className="neon-border">
-                  View Demo
-                </Button>
-              </div>
+        <section className="relative w-full overflow-hidden bg-foreground py-32 text-background">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute right-[-4%] top-1/2 -translate-y-1/2 select-none font-heading leading-none text-background"
+            style={{ fontSize: "clamp(6rem, 18vw, 18rem)", opacity: 0.04 }}
+          >
+            alpha
+          </div>
+          <div className="container relative z-10 mx-auto max-w-4xl space-y-8 px-6 text-center">
+            <h2
+              className="editorial-title text-background"
+              style={{ fontSize: "clamp(3rem, 7vw, 6rem)" }}
+            >
+              Ready to
+              <br />
+              <span className="italic">scan?</span>
+            </h2>
+            <p className="mx-auto max-w-lg text-lg font-light text-background/75">
+              Connect your wallet, attach your Telegram source, and let the
+              AlphaScan agent pipeline start building a visible market memory.
+            </p>
+            <div className="flex flex-col justify-center gap-4 pt-2 sm:flex-row">
+              <Button
+                size="lg"
+                className="h-12 rounded-full bg-background px-10 text-[0.95rem] font-semibold text-foreground shadow-sm hover:bg-background/90"
+                asChild
+              >
+                <Link href="/login">
+                  Start scanning <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-12 rounded-full border-background/20 px-10 text-[0.95rem] font-medium text-background hover:bg-background/10"
+                asChild
+              >
+                <Link href="/agent-actions">View agent logs</Link>
+              </Button>
             </div>
           </div>
         </section>
       </main>
-      <footer className="w-full glass py-6 md:py-0">
-        <div className="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
-          <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-            © 2025 <span className="neon-text-purple">Scanio</span>. All
-            rights reserved.
-          </p>
-          <div className="flex items-center space-x-4">
-            <Link
-              href="#"
-              className="text-sm text-muted-foreground underline-offset-4 hover:text-primary"
-            >
-              Terms
+
+      <footer className="w-full border-t border-background/10 bg-foreground py-12">
+        <div className="container mx-auto flex max-w-5xl flex-col items-center justify-between gap-6 px-6 md:flex-row">
+          <span className="font-heading text-3xl text-background">AlphaScan.</span>
+          <div className="flex items-center gap-8 text-sm font-light text-background/65">
+            <Link href="/dashboard" className="transition-colors hover:text-background">
+              Dashboard
             </Link>
-            <Link
-              href="#"
-              className="text-sm text-muted-foreground underline-offset-4 hover:text-secondary"
-            >
-              Privacy
+            <Link href="/wallet" className="transition-colors hover:text-background">
+              Wallet
             </Link>
-            <Link
-              href="#"
-              className="text-sm text-muted-foreground underline-offset-4 hover:text-accent"
-            >
-              Contact
+            <Link href="/agent-lessons" className="transition-colors hover:text-background">
+              Lessons
             </Link>
           </div>
+          <p className="text-xs font-light text-background/50">
+            © {new Date().getFullYear()} AlphaScan. Built on 0G.
+          </p>
         </div>
       </footer>
     </div>

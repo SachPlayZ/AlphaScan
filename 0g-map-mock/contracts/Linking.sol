@@ -3,18 +3,15 @@ pragma solidity ^0.8.28;
 
 /**
  * @title Linking
- * @dev Contract for mapping wallet addresses to private and public keys with multi-owner support
+ * @dev Contract for mapping wallet addresses to agent wallet addresses with multi-owner support
  */
 contract Linking {
-    // Struct to store key information
-    struct KeyPair {
-        string privateKey;
-        string publicKey;
+    struct AgentKey {
+        string agentAddress;
         uint256 timestamp;
     }
 
-    // Mapping from wallet address to key pair
-    mapping(address => KeyPair) private addressToKeys;
+    mapping(address => AgentKey) private addressToKeys;
 
     // Mapping to track contract owners
     mapping(address => bool) private owners;
@@ -22,7 +19,7 @@ contract Linking {
     // Events
     event KeysLinked(
         address indexed wallet,
-        string publicKey,
+        string agentAddress,
         uint256 timestamp
     );
     event OwnerAdded(address indexed newOwner, address indexed addedBy);
@@ -76,87 +73,60 @@ contract Linking {
     }
 
     /**
-     * @dev Links the sender's wallet address to the provided private and public keys
-     * @param _privateKey The private key to link to the wallet
-     * @param _publicKey The public key to link to the wallet
+     * @dev Links the sender's wallet address to the provided agent wallet address
+     * @param _agentAddress The agent wallet address to link
      */
-    function linkKeys(
-        string memory _privateKey,
-        string memory _publicKey
-    ) external {
-        // Store the key pair
-        addressToKeys[msg.sender] = KeyPair({
-            privateKey: _privateKey,
-            publicKey: _publicKey,
+    function linkKeys(string memory _agentAddress) external {
+        addressToKeys[msg.sender] = AgentKey({
+            agentAddress: _agentAddress,
             timestamp: block.timestamp
         });
-
-        // Emit event (only with public key for privacy)
-        emit KeysLinked(msg.sender, _publicKey, block.timestamp);
+        emit KeysLinked(msg.sender, _agentAddress, block.timestamp);
     }
 
     /**
-     * @dev Links a specified wallet address to the provided private and public keys (owner only)
-     * @param _walletAddress The wallet address to link the keys to
-     * @param _privateKey The private key to link to the wallet
-     * @param _publicKey The public key to link to the wallet
+     * @dev Links a specified wallet address to an agent wallet address (owner only)
+     * @param _walletAddress The wallet address to link
+     * @param _agentAddress The agent wallet address to link
      */
     function linkKeysForAddress(
         address _walletAddress,
-        string memory _privateKey,
-        string memory _publicKey
+        string memory _agentAddress
     ) external onlyOwner {
         require(_walletAddress != address(0), "Invalid address");
-
-        // Store the key pair
-        addressToKeys[_walletAddress] = KeyPair({
-            privateKey: _privateKey,
-            publicKey: _publicKey,
+        addressToKeys[_walletAddress] = AgentKey({
+            agentAddress: _agentAddress,
             timestamp: block.timestamp
         });
-
-        // Emit event (only with public key for privacy)
-        emit KeysLinked(_walletAddress, _publicKey, block.timestamp);
+        emit KeysLinked(_walletAddress, _agentAddress, block.timestamp);
     }
 
     /**
-     * @dev Retrieves the public key linked to the specified wallet address
-     * @param _walletAddress The wallet address to retrieve the public key for
-     * @return The public key linked to the specified wallet address
+     * @dev Retrieves the agent wallet address linked to the specified wallet
+     * @param _walletAddress The wallet address to query
+     * @return The agent wallet address
      */
-    function getPublicKey(
+    function getAgentAddress(
         address _walletAddress
     ) external view returns (string memory) {
-        return addressToKeys[_walletAddress].publicKey;
+        return addressToKeys[_walletAddress].agentAddress;
     }
 
     /**
-     * @dev Retrieves the private key linked to the specified wallet address
-     * @param _walletAddress The wallet address to retrieve the private key for
-     * @return The private key linked to the specified wallet address
-     * @notice This function should be used with caution as it exposes the private key
-     */
-    function getPrivateKey(
-        address _walletAddress
-    ) external view onlyOwner returns (string memory) {
-        return addressToKeys[_walletAddress].privateKey;
-    }
-
-    /**
-     * @dev Checks if the specified wallet address has linked keys
+     * @dev Checks if the specified wallet address has a linked agent wallet
      * @param _walletAddress The wallet address to check
-     * @return True if the wallet has linked keys, false otherwise
+     * @return True if linked, false otherwise
      */
     function hasLinkedKeys(
         address _walletAddress
     ) external view returns (bool) {
-        return bytes(addressToKeys[_walletAddress].publicKey).length > 0;
+        return bytes(addressToKeys[_walletAddress].agentAddress).length > 0;
     }
 
     /**
-     * @dev Retrieves the timestamp when the keys were linked for the specified wallet address
-     * @param _walletAddress The wallet address to retrieve the timestamp for
-     * @return The timestamp when the keys were linked
+     * @dev Retrieves the timestamp when the agent wallet was linked
+     * @param _walletAddress The wallet address to query
+     * @return The timestamp of the link
      */
     function getLinkTimestamp(
         address _walletAddress

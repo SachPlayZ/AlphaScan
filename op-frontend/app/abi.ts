@@ -12,7 +12,7 @@ export const abi = [
       {
         indexed: false,
         internalType: "string",
-        name: "publicKey",
+        name: "agentAddress",
         type: "string",
       },
       {
@@ -74,26 +74,17 @@ export const abi = [
     inputs: [
       { internalType: "address", name: "_walletAddress", type: "address" },
     ],
+    name: "getAgentAddress",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_walletAddress", type: "address" },
+    ],
     name: "getLinkTimestamp",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "_walletAddress", type: "address" },
-    ],
-    name: "getPrivateKey",
-    outputs: [{ internalType: "string", name: "", type: "string" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "_walletAddress", type: "address" },
-    ],
-    name: "getPublicKey",
-    outputs: [{ internalType: "string", name: "", type: "string" }],
     stateMutability: "view",
     type: "function",
   },
@@ -115,8 +106,7 @@ export const abi = [
   },
   {
     inputs: [
-      { internalType: "string", name: "_privateKey", type: "string" },
-      { internalType: "string", name: "_publicKey", type: "string" },
+      { internalType: "string", name: "_agentAddress", type: "string" },
     ],
     name: "linkKeys",
     outputs: [],
@@ -126,8 +116,7 @@ export const abi = [
   {
     inputs: [
       { internalType: "address", name: "_walletAddress", type: "address" },
-      { internalType: "string", name: "_privateKey", type: "string" },
-      { internalType: "string", name: "_publicKey", type: "string" },
+      { internalType: "string", name: "_agentAddress", type: "string" },
     ],
     name: "linkKeysForAddress",
     outputs: [],
@@ -143,4 +132,4 @@ export const abi = [
   },
 ];
 
-export const contractAddress = "0x3c21DB69Df3e069806AA55C4EbD54519B4504815";
+export const contractAddress = "0xB779d0eB723Aefd3847c017E65B0b321E1D8111F";

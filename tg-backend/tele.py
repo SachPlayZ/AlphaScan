@@ -15,7 +15,8 @@ from typing import Dict, List, Any, Tuple
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from pydantic_core import from_json
-from web3util import og_balance, token_balance, buy_token, sell_token
+from eth_account.messages import encode_defunct
+from web3util import og_balance, token_balance, buy_token, sell_token, w3
 from rich import print
 
 # Configure logging
@@ -108,6 +109,13 @@ class VerifyOTPRequest(BaseModel):
 class SendMessageRequest(BaseModel):
     recipient: str
     message: str
+
+
+class StoreAgentKeyRequest(BaseModel):
+    user_wallet: str
+    agent_address: str
+    agent_private_key: str
+    signature: str
 
 
 def encrypt_data(data: str) -> str:
@@ -768,7 +776,8 @@ def generate(prompt: str):
 
 async def get_og_native_balance(user_id: str) -> bool:
     debug(f"Getting 0G balance for user {user_id}")
-    balance = og_balance(user_id)["og_balance"]
+    agent_address, agent_private_key = await get_agent_keys(user_id)
+    balance = og_balance(agent_address, agent_private_key)["og_balance"]
     if balance > 0:
         await log_action(
             "Check 0G Balance", "Check 0G Balance", {
@@ -782,7 +791,8 @@ async def get_og_native_balance(user_id: str) -> bool:
 
 async def get_token_balance(token: str, user_id: str) -> bool:
     debug(f"Getting token balance for user {user_id} and token {token}")
-    balance = token_balance(user_id, token)["token_balance"]
+    agent_address, agent_private_key = await get_agent_keys(user_id)
+    balance = token_balance(agent_address, agent_private_key, token)["token_balance"]
     if balance > 0:
         await log_action(
             "Check Token Balance", token, {
@@ -937,9 +947,10 @@ async def get_token_history(user_id: str) -> List[str]:
 @app.get("/get-token-history/{user_id}")
 async def get_token_history_endpoint(user_id: str):
     tokens = await get_token_history(user_id)
+    agent_address, agent_private_key = await get_agent_keys(user_id)
     res = []
     for token in tokens:
-        balance = token_balance(user_id, token)
+        balance = token_balance(agent_address, agent_private_key, token)
         res.append({"token": token, "balance": balance})
     return res
 
@@ -948,7 +959,9 @@ async def transaction_layer(token: Dict, user_id: str):
     """Execute token transactions based on sentiment analysis"""
     try:
         info(f"Starting transaction layer for token {token['token']} and user {user_id}")
-        
+
+        agent_address, agent_private_key = await get_agent_keys(user_id)
+
         # Store transaction history
         try:
             await store_token_transaction(user_id, token["token"])
@@ -959,12 +972,12 @@ async def transaction_layer(token: Dict, user_id: str):
 
         if token["sentiment"] == "positive":
             try:
-                balance = og_balance(user_id)["og_balance"]
+                balance = og_balance(agent_address, agent_private_key)["og_balance"]
                 info(f"0G balance for user {user_id}: {balance}")
 
                 if balance > 0:
                     try:
-                        tx = buy_token(user_id, token["token"], balance * 0.6)
+                        tx = buy_token(agent_address, agent_private_key, token["token"], balance * 0.6)
                         info(f"Successfully bought {token['token']} for user {user_id}")
                         await log_action(f"Buy Token {token['token']}", token, tx, user_id)
                     except Exception as e:
@@ -990,12 +1003,12 @@ async def transaction_layer(token: Dict, user_id: str):
 
         elif token["sentiment"] == "negative":
             try:
-                balance = token_balance(user_id, token["token"])["token_balance"]
+                balance = token_balance(agent_address, agent_private_key, token["token"])["token_balance"]
                 info(f"Token balance for {token['token']} and user {user_id}: {balance}")
-                
+
                 if balance > 0:
                     try:
-                        tx = sell_token(user_id, token["token"], balance)
+                        tx = sell_token(agent_address, agent_private_key, token["token"], balance)
                         info(f"Successfully sold {token['token']} for user {user_id}")
                         await log_action(f"Sell Token {token['token']}", token, tx, user_id)
                     except Exception as e:
@@ -1454,6 +1467,44 @@ async def verify_otp(request: VerifyOTPRequest):
     return {"status": "Authentication successful"}
 
 
+@app.post("/store-agent-key")
+async def store_agent_key(request: StoreAgentKeyRequest):
+    """Store the agent wallet private key, encrypted, after verifying the caller owns user_wallet."""
+    message = f"AlphaScan:link:{request.user_wallet}:{request.agent_address}"
+    try:
+        recovered = w3.eth.account.recover_message(
+            encode_defunct(text=message),
+            signature=request.signature,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid signature format: {str(e)}")
+
+    if recovered.lower() != request.user_wallet.lower():
+        raise HTTPException(status_code=401, detail="Signature does not match user_wallet")
+
+    await db["agent_keys"].update_one(
+        {"user_wallet": request.user_wallet.lower()},
+        {
+            "$set": {
+                "agent_address": request.agent_address,
+                "encrypted_key": encrypt_data(request.agent_private_key),
+                "linked_at": datetime.now(UTC),
+            }
+        },
+        upsert=True,
+    )
+    info(f"Agent key stored for user_wallet {request.user_wallet}")
+    return {"status": "stored"}
+
+
+async def get_agent_keys(user_id: str) -> tuple[str, str]:
+    """Fetch the agent wallet address and decrypted private key from MongoDB."""
+    record = await db["agent_keys"].find_one({"user_wallet": user_id.lower()})
+    if not record:
+        raise ValueError(f"No agent keys found for {user_id}")
+    return record["agent_address"], decrypt_data(record["encrypted_key"])
+
+
 @app.post("/send-message")
 async def send_message(
     request: SendMessageRequest, client: TelegramClient = Depends(get_user_client)
@@ -1470,12 +1521,12 @@ async def send_message(
 @app.get("/")
 async def root():
     return {
-        "name": "Scanio Backend",
+        "name": "AlphaScan Backend",
         "status": "online",
         "version": "1.0.0", 
-        "description": "Backend service for Scanio - Telegram group monitoring and crypto trading signals",
+        "description": "Backend service for AlphaScan - Telegram group monitoring and crypto trading signals",
         "endpoints": {
-            "auth": ["/init-user", "/verify-otp"],
+            "auth": ["/init-user", "/verify-otp", "/store-agent-key"],
             "groups": ["/watched-groups/{user_id}", "/watch-group", "/unwatch-group"],
             "messages": ["/send-message"],
             "data": ["/get-logs/{user_id}", "/get-token-history/{user_id}", "/get-queue"]

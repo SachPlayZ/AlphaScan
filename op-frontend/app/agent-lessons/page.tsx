@@ -254,13 +254,13 @@ export default function AgentLessonsPage() {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "market":
-        return "bg-blue-500/20 text-blue-500";
+        return "bg-violet-500/20 text-violet-300";
       case "technical":
-        return "bg-purple-500/20 text-purple-500";
+        return "bg-purple-500/20 text-purple-300";
       case "risk":
         return "bg-red-500/20 text-red-500";
       case "strategy":
-        return "bg-green-500/20 text-green-500";
+        return "bg-fuchsia-500/20 text-fuchsia-300";
       default:
         return "bg-gray-500/20 text-gray-500";
     }
@@ -269,9 +269,9 @@ export default function AgentLessonsPage() {
   const getImpactColor = (impact: string) => {
     switch (impact) {
       case "high":
-        return "bg-green-500/20 text-green-500";
+        return "bg-fuchsia-500/20 text-fuchsia-300";
       case "medium":
-        return "bg-yellow-500/20 text-yellow-500";
+        return "bg-violet-500/20 text-violet-300";
       case "low":
         return "bg-gray-500/20 text-gray-500";
       default:
@@ -288,16 +288,17 @@ export default function AgentLessonsPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-shell flex min-h-screen flex-col">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="page-container">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">
+            <p className="section-label mb-3">Learning Layer</p>
+            <h1 className="font-heading text-5xl leading-none text-foreground mb-3">
               Agent Lessons
             </h1>
-            <p className="text-gray-400">
+            <p className="font-light text-muted-foreground">
               Insights and lessons learned by your AI agent from its actions and
               decisions
             </p>
@@ -310,7 +311,7 @@ export default function AgentLessonsPage() {
         </div>
 
         {/* Filters and Search */}
-        <Card className="glass-card neon-border mb-8">
+        <Card className="glass-card mb-8 rounded-3xl">
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="relative">
@@ -385,7 +386,7 @@ export default function AgentLessonsPage() {
             </div>
           ) : sortedLessons.length === 0 ? (
             <div className="col-span-2">
-              <Card className="glass-card neon-border">
+              <Card className="glass-card rounded-3xl">
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <BookOpen className="h-12 w-12 text-gray-400 mb-4" />
                   <h3 className="text-xl font-medium text-white mb-2">
@@ -402,7 +403,7 @@ export default function AgentLessonsPage() {
             sortedLessons.map((lesson) => (
               <Card
                 key={lesson.id}
-                className="glass-card neon-border overflow-hidden"
+                className="glass-card overflow-hidden rounded-3xl"
               >
                 <div className="border-l-4 border-primary h-full flex flex-col">
                   <CardHeader className="pb-2">
@@ -524,7 +525,7 @@ export default function AgentLessonsPage() {
         </div>
 
         {/* Learning Statistics */}
-        <Card className="glass-card neon-border mt-8">
+        <Card className="glass-card mt-8 rounded-3xl">
           <CardHeader>
             <CardTitle>Learning Statistics</CardTitle>
             <CardDescription>

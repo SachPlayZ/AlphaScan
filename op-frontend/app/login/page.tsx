@@ -73,7 +73,7 @@ export default function LoginPage() {
     try {
       // Here you would typically send the phone number to your backend
       console.log("Phone number submitted:", countryCode + phoneNumber);
-      const response = await fetch("https://scanio-ai.onrender.com/init", {
+      const response = await fetch("https://alphascan-ai.onrender.com/init", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -131,7 +131,7 @@ export default function LoginPage() {
 
       // Simulate API call
       // await new Promise((resolve) => setTimeout(resolve, 1500));
-      const response = await fetch("https://scanio-ai.onrender.com/verify", {
+      const response = await fetch("https://alphascan-ai.onrender.com/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -176,22 +176,47 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-shell flex min-h-screen flex-col">
       <Navbar />
-      <main className="flex-1 flex items-center justify-center py-12">
-        <div className="w-full max-w-md space-y-8 px-4">
-          <div className="space-y-2 text-center">
-            <h1 className="text-3xl font-bold tracking-tighter">
-              Welcome to <span className="neon-text-purple">Scanio</span>
+      <main className="relative flex flex-1 items-center justify-center overflow-hidden px-4 py-16">
+        <div className="grain-overlay" aria-hidden />
+        <div
+          aria-hidden
+          className="absolute left-1/2 top-8 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl"
+        />
+        <div className="relative z-10 grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[1fr_0.9fr]">
+          <div className="hidden space-y-6 lg:block">
+            <p className="section-label">Onboarding</p>
+            <h1
+              className="editorial-title text-foreground"
+              style={{ fontSize: "clamp(3.5rem, 7vw, 6.5rem)" }}
+            >
+              Link your
+              <br />
+              <span className="italic">signal source.</span>
             </h1>
-            <p className="text-muted-foreground">
-              {showOtpVerification
-                ? "Enter the verification code sent to your phone"
-                : "Enter your phone number to get started with AI-powered market insights"}
+            <p className="max-w-md font-light leading-relaxed text-muted-foreground">
+              Verify your phone to connect Telegram access, then choose the
+              groups AlphaScan should watch for early market movement.
             </p>
           </div>
 
-          <div className="glass-card p-6 rounded-lg neon-border">
+          <div className="w-full space-y-8">
+            <div className="space-y-3 text-center lg:text-left">
+              <p className="section-label justify-center lg:justify-start">
+                AlphaScan Access
+              </p>
+              <h2 className="font-heading text-5xl leading-none tracking-tight">
+                {showOtpVerification ? "Enter code" : "Welcome back"}
+              </h2>
+              <p className="text-sm font-light leading-relaxed text-muted-foreground">
+              {showOtpVerification
+                ? "Enter the verification code sent to your phone"
+                : "Enter your phone number to get started with AI-powered market insights"}
+              </p>
+            </div>
+
+          <div className="glass-card rounded-3xl p-6 md:p-8">
             {!showOtpVerification ? (
               <form
                 onSubmit={handleSubmit}
@@ -202,7 +227,7 @@ export default function LoginPage() {
                   <Label htmlFor="phone">Phone Number</Label>
                   <div className="flex">
                     <Select value={countryCode} onValueChange={setCountryCode}>
-                      <SelectTrigger className="w-[120px] rounded-r-none border-r-0 glass">
+                      <SelectTrigger className="glass w-[120px] rounded-l-2xl rounded-r-none border-r-0">
                         <SelectValue placeholder="Code" />
                       </SelectTrigger>
                       <SelectContent className="glass-card max-h-[300px]">
@@ -220,7 +245,7 @@ export default function LoginPage() {
                       id="phone"
                       type="tel"
                       placeholder="Phone number"
-                      className="flex-1 rounded-l-none glass"
+                      className="glass flex-1 rounded-l-none rounded-r-2xl"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       required
@@ -233,7 +258,7 @@ export default function LoginPage() {
 
                 <Button
                   type="button"
-                  className="w-full bg-primary hover:bg-primary/80 neon-glow group transition-all duration-300 ease-in-out z-10"
+                  className="group z-10 h-12 w-full rounded-full bg-primary font-medium text-primary-foreground transition-all duration-300 ease-in-out hover:bg-primary/90"
                   disabled={isSubmitting}
                   onClick={(e) => {
                     e.preventDefault();
@@ -270,7 +295,7 @@ export default function LoginPage() {
                         type="text"
                         inputMode="numeric"
                         maxLength={1}
-                        className="w-12 h-12 text-center text-lg font-bold glass"
+                        className="glass h-14 w-12 rounded-2xl text-center text-lg font-bold"
                         value={digit}
                         onChange={(e) => handleOtpChange(index, e.target.value)}
                         onKeyDown={(e) => handleKeyDown(index, e)}
@@ -286,7 +311,7 @@ export default function LoginPage() {
 
                 <Button
                   type="button"
-                  className="w-full bg-primary hover:bg-primary/80 neon-glow group transition-all duration-300 ease-in-out z-20 relative"
+                  className="group relative z-20 h-12 w-full rounded-full bg-primary font-medium text-primary-foreground transition-all duration-300 ease-in-out hover:bg-primary/90"
                   disabled={isVerifying || otp.some((digit) => !digit)}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -329,6 +354,7 @@ export default function LoginPage() {
               </Link>
             </p>
           </div>
+        </div>
         </div>
       </main>
     </div>

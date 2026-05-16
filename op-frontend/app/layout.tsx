@@ -1,16 +1,25 @@
 import type React from "react";
 import "@/app/globals.css";
-import { Inter } from "next/font/google";
+import { Instrument_Serif, Montserrat } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/toaster";
 
-const inter = Inter({ subsets: ["latin"] });
+const instrumentSerif = Instrument_Serif({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-instrument-serif",
+});
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  variable: "--font-montserrat",
+});
 
 export const metadata = {
-  title: "Scanio - Market Intelligence Powered by AI",
+  title: "AlphaScan - Market Intelligence by AI Agents",
   description:
-    "AI-powered market analysis platform that provides data-driven insights for smarter trading decisions.",
+    "AI-powered market analysis platform for social alpha, wallet intelligence, and agent-driven trading decisions.",
 };
 
 export default function RootLayout({
@@ -19,8 +28,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html
+      lang="en"
+      className={`${instrumentSerif.variable} ${montserrat.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-screen font-sans antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

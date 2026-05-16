@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Users, Plus } from "lucide-react";
 
@@ -115,10 +115,12 @@ export default function SelectGroupPage() {
   const { address } = useAccount();
   const { toast } = useToast();
 
-  const getGroups = async () => {
+  const getGroups = useCallback(async () => {
+    if (!address) return;
+
     try {
       const response = await fetch(
-        `https://scanio-ai.onrender.com/user-groups/${address}`
+        `https://alphascan-ai.onrender.com/user-groups/${address}`
       );
       const data = await response.json();
       // Ensure the data has the correct structure
@@ -137,13 +139,13 @@ export default function SelectGroupPage() {
         variant: "destructive",
       });
     }
-  };
+  }, [address, toast]);
 
   useEffect(() => {
     if (address) {
       getGroups();
     }
-  }, [address]);
+  }, [address, getGroups]);
 
   const handleGroupSelect = (group: Group) => {
     setSelectedGroup(group);
@@ -164,7 +166,7 @@ export default function SelectGroupPage() {
       ) {
         return;
       }
-      const response = await fetch(`https://scanio-ai.onrender.com/watch-group`, {
+      const response = await fetch(`https://alphascan-ai.onrender.com/watch-group`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -201,13 +203,13 @@ export default function SelectGroupPage() {
   // Add a check for empty groups
   if (allGroups.length === 0) {
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="page-shell flex min-h-screen flex-col">
         <Navbar />
         <Toaster />
         <main className="flex-1 flex items-center justify-center py-12">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold">No groups available</h2>
-            <p className="text-muted-foreground mt-2">Please try again later</p>
+          <div className="glass-card rounded-3xl p-10 text-center">
+            <h2 className="font-heading text-4xl">No groups available</h2>
+            <p className="mt-3 text-muted-foreground">Please try again later</p>
           </div>
         </main>
       </div>
@@ -215,23 +217,23 @@ export default function SelectGroupPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <style jsx global>{`
-        .neon-border-thick {
-          box-shadow: 0 0 5px #8b5cf6, 0 0 10px #8b5cf6;
-          border: 2px solid #8b5cf6;
-        }
-      `}</style>
-
+    <div className="page-shell flex min-h-screen flex-col">
       <Navbar />
       <Toaster />
-      <main className="flex-1 flex items-center justify-center py-12">
-        <div className="w-full max-w-4xl space-y-8 px-4">
-          <div className="space-y-2 text-center">
-            <h1 className="text-3xl font-bold tracking-tighter">
-              Select a <span className="neon-text-purple">Group</span>
+      <main className="relative flex-1 overflow-hidden py-16">
+        <div className="grain-overlay" aria-hidden />
+        <div className="mx-auto w-full max-w-6xl space-y-12 px-4 md:px-6">
+          <div className="mx-auto max-w-3xl space-y-4 text-center">
+            <p className="section-label justify-center">Signal Source</p>
+            <h1
+              className="editorial-title text-foreground"
+              style={{ fontSize: "clamp(3rem, 7vw, 6rem)" }}
+            >
+              Select a
+              <br />
+              <span className="italic">group to watch.</span>
             </h1>
-            <p className="text-muted-foreground">
+            <p className="mx-auto max-w-xl font-light leading-relaxed text-muted-foreground">
               Choose a group to access AI-powered market insights and
               discussions
             </p>
@@ -243,23 +245,23 @@ export default function SelectGroupPage() {
                 key={group.id}
                 className={`glass-card p-6 rounded-lg cursor-pointer transition-all duration-300 ${
                   selectedGroup?.id === group.id
-                    ? "neon-border-thick"
-                    : "neon-border hover:scale-[1.01]"
+                    ? "border-2 border-primary bg-primary/10"
+                    : "neon-border hover:-translate-y-1 hover:border-primary/30"
                 }`}
                 onClick={() => handleGroupSelect(group)}
               >
                 <div className="flex justify-between items-start">
-                  <h3 className="text-xl font-semibold">{group.title}</h3>
+                  <h3 className="font-heading text-3xl leading-none">{group.title}</h3>
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Users className="h-4 w-4 mr-1" />
                     <span>{group.participants_count}</span>
                   </div>
                 </div>
-                <p className="text-muted-foreground mt-2">
+                <p className="mt-4 text-sm font-light leading-relaxed text-muted-foreground">
                   {group.description || "No description available"}
                 </p>
                 <div className="flex items-center mt-2">
-                  <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                  <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
                     {group.type}
                   </span>
                 </div>
@@ -270,8 +272,8 @@ export default function SelectGroupPage() {
           {selectedGroup?.type === "supergroup" && selectedGroup.is_forum && (
             <div className="mt-12 space-y-6 animate-fade-in">
               <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold tracking-tight">
-                  Select a <span className="neon-text-purple">Topic</span>
+                <h2 className="font-heading text-4xl tracking-tight">
+                  Select a <span className="italic text-primary">Topic</span>
                 </h2>
                 <p className="text-muted-foreground">
                   Choose a specific topic to focus on within this group
@@ -289,10 +291,10 @@ export default function SelectGroupPage() {
                       if (topic) handleTopicSelect(topic);
                     }}
                   >
-                    <SelectTrigger className="w-full h-12 text-lg bg-background/50 backdrop-blur-sm border-primary/20 hover:border-primary/40 transition-all duration-300">
+                    <SelectTrigger className="glass h-12 w-full rounded-full border-primary/20 text-lg transition-all duration-300 hover:border-primary/40">
                       <SelectValue placeholder="Choose a topic to focus on..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-background/95 backdrop-blur-sm border-primary/20">
+                    <SelectContent className="glass-card border-primary/20">
                       {selectedGroup.topics?.map((topic) => (
                         <SelectItem
                           key={topic.id}
@@ -327,10 +329,10 @@ export default function SelectGroupPage() {
             </div>
           )}
 
-          <div className="flex gap-20 justify-center">
+          <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <Button
               type="button"
-              className="bg-primary hover:bg-primary/80 neon-glow group transition-all duration-300 ease-in-out z-20 relative px-8"
+              className="group relative z-20 h-12 rounded-full bg-primary px-8 text-primary-foreground transition-all duration-300 ease-in-out hover:bg-primary/90"
               disabled={
                 !selectedGroup ||
                 (selectedGroup.type === "supergroup" &&
@@ -344,7 +346,7 @@ export default function SelectGroupPage() {
             </Button>
             <Button
               type="button"
-              className="bg-primary hover:bg-primary/80 neon-glow group transition-all duration-300 ease-in-out z-20 relative px-8"
+              className="group relative z-20 h-12 rounded-full bg-foreground px-8 text-background transition-all duration-300 ease-in-out hover:bg-foreground/90"
               onClick={() => router.push("/wallet")}
             >
               Agent Configuration

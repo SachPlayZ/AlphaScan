@@ -59,7 +59,7 @@ export default function AgentActionsPage() {
     const fetchLogs = async () => {
       try {
         const response = await fetch(
-          `https://scanio-ai.onrender.com/get-logs/${address}`
+          `https://alphascan-ai.onrender.com/get-logs/${address}`
         ); // Replace with actual user ID
         if (!response.ok) {
           throw new Error("Failed to fetch logs");
@@ -189,7 +189,7 @@ export default function AgentActionsPage() {
       case "success":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case "in_progress":
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return <Clock className="h-4 w-4 text-fuchsia-400" />;
       case "failed":
         return <XCircle className="h-4 w-4 text-red-500" />;
       default:
@@ -200,45 +200,46 @@ export default function AgentActionsPage() {
   const getActionTypeColor = (type: string) => {
     switch (type) {
       case "Get Alpha from Group Texts":
-        return "bg-blue-500/20 text-blue-500";
+        return "bg-violet-500/20 text-violet-300";
       case "Analyse Texts":
-        return "bg-purple-500/20 text-purple-500";
+        return "bg-purple-500/20 text-purple-300";
       case "Analyse Each Alpha":
-        return "bg-purple-500/20 text-purple-500";
+        return "bg-purple-500/20 text-purple-300";
       case "Check 0G Balance":
         return "bg-green-500/20 text-green-500";
       case "Check Token Balance":
         return "bg-green-500/20 text-green-500";
       case "Validation Layer":
-        return "bg-yellow-500/20 text-yellow-500";
+        return "bg-fuchsia-500/20 text-fuchsia-300";
       case "Trust Layer":
-        return "bg-yellow-500/20 text-yellow-500";
+        return "bg-fuchsia-500/20 text-fuchsia-300";
       case "Get Historical Data":
-        return "bg-blue-500/20 text-blue-500";
+        return "bg-violet-500/20 text-violet-300";
       case "Detect Trends":
-        return "bg-blue-500/20 text-blue-500";
+        return "bg-violet-500/20 text-violet-300";
       case "Get PNL Potential":
-        return "bg-blue-500/20 text-blue-500";
+        return "bg-violet-500/20 text-violet-300";
       case "Get Tweets":
-        return "bg-blue-500/20 text-blue-500";
+        return "bg-violet-500/20 text-violet-300";
       case "Analyse Tweets":
-        return "bg-blue-500/20 text-blue-500";
+        return "bg-violet-500/20 text-violet-300";
       default:
         return "bg-gray-500/20 text-gray-500";
     }
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-shell flex min-h-screen flex-col">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="page-container">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">
+            <p className="section-label mb-3">Agent Memory</p>
+            <h1 className="font-heading text-5xl leading-none text-foreground mb-3">
               Agent Actions
             </h1>
-            <p className="text-gray-400">
+            <p className="font-light text-muted-foreground">
               Track and monitor all actions taken by your AI agent
             </p>
           </div>
@@ -250,7 +251,7 @@ export default function AgentActionsPage() {
         </div>
 
         {/* Filters and Search */}
-        <Card className="glass-card neon-border mb-8">
+        <Card className="glass-card mb-8 rounded-3xl">
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="relative">
@@ -349,7 +350,7 @@ export default function AgentActionsPage() {
               <RefreshCcw className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : error ? (
-            <Card className="glass-card neon-border">
+            <Card className="glass-card rounded-3xl">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
                 <h3 className="text-xl font-medium text-white mb-2">
@@ -359,7 +360,7 @@ export default function AgentActionsPage() {
               </CardContent>
             </Card>
           ) : sortedActions.length === 0 ? (
-            <Card className="glass-card neon-border">
+            <Card className="glass-card rounded-3xl">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <AlertCircle className="h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-xl font-medium text-white mb-2">
@@ -375,7 +376,7 @@ export default function AgentActionsPage() {
             sortedActions.map((action) => (
               <Card
                 key={action.timestamp.toISOString()}
-                className="glass-card neon-border overflow-hidden"
+                className="glass-card overflow-hidden rounded-3xl"
               >
                 <div className="border-l-4 border-primary">
                   <CardHeader className="pb-2">
@@ -422,7 +423,7 @@ export default function AgentActionsPage() {
         </div>
 
         {/* Action Statistics */}
-        <Card className="glass-card neon-border mt-8">
+        <Card className="glass-card mt-8 rounded-3xl">
           <CardHeader>
             <CardTitle>Action Statistics</CardTitle>
             <CardDescription>
